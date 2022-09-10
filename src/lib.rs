@@ -11,12 +11,6 @@ pub struct ThreadPool {
 type Job = Box<dyn FnOnce() + Send + 'static>; 
 
 impl ThreadPool {
-    // usize - pointer-sized UNSIGNED integer type
-    //         allows you to reference any location in memory 
-    //         and bc of that - isn't a set, fixed size of bytes - bc
-    //         it takes on a different size in bytes depending on how many 
-    //         bytes it takes to reference a particularly sized piece of 
-    //         data in memory
     ///  Create a new ThreadPool. 
     ///
     ///  The size is the number of threads in the pool 
@@ -27,11 +21,6 @@ impl ThreadPool {
     pub fn new(size: usize) ->  ThreadPool {
         assert!(size > 0);
 
-        // - allows vector in memory to hold elemnts until CAPACITY without 
-        //   the vector needing to reallocated (reserves future real estate 
-        //   for the vector)
-        // - preallocation is more efficient for performance than allocating
-        //   on a need-to basis
         let (sender, receiver) = mpsc::channel();
         
         let receiver = Arc::new(Mutex::new(receiver));
@@ -39,10 +28,7 @@ impl ThreadPool {
         let mut workers = Vec::with_capacity(size);
 
         for id in 0..size {
-            // .push implictly takes a mutable reference to the value coming 
-            // before "."
             workers.push(Worker::new(id, Arc::clone(&receiver)));
-            // create some threads & store them in vector
         }
     
         ThreadPool { workers, sender: Some(sender) }
@@ -58,8 +44,6 @@ impl ThreadPool {
     ///  a job to a receiver
     pub fn execute<F>(&self, f: F)
         where 
-        // "()" - denotes that closure (a closure that returns a unit type
-        //        since there is '->' showing signature of F)
             F: FnOnce() + Send + 'static,
     {
         let job = Box::new(f);
@@ -75,15 +59,7 @@ impl Drop for ThreadPool {
         for worker in &mut self.workers {
             println!("Shutting down worker {}", worker.id);
 
-            // could you delete this check, so you always join the 
-            //       thread contained insdie Option w out checking 
-            //       whether or not
-            //       Option is Some or None? 
             if let Some(thread) = worker.thread.take() {
-                // "take" takes Some variant out, and leaves behind a None 
-                //        variant 
-                // * "take" doesn't unwrap the value, it takes the ENTIRE 
-                //        Some variant
                 thread.join().unwrap();
             }
         }
@@ -92,19 +68,11 @@ impl Drop for ThreadPool {
 
 pub struct Worker {
     id: usize,
-    // JoinHandle<T>'s T is the type our closure returns 
-    //             since closure only runs statement, handle_connection
-    //             , we can use a unit type for the return value of our 
-    //             closure
     thread: Option<thread::JoinHandle<()>>,
 }
 
 impl Worker {
     fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
-        // w "let" - any temporary values used in expression on
-        //           RH side of equals above is immediately 
-        //           dropped when "let" statement ends (i.e., when 
-        //           line 78 is reached)
         let thread = thread::spawn(move || loop {
             match receiver.lock().unwrap().recv() {
                 Ok(job) => {

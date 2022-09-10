@@ -1,5 +1,3 @@
-// below imports let us get traits/types that let us 
-// read from and write to stream
 use std::{
     fs,
     io::{prelude::*, BufReader},
@@ -12,12 +10,7 @@ use multithreaded_webserver::ThreadPool;
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
     let pool = ThreadPool::new(4);
-    // IP address of local computer (localhost) is 127.0.0.1
-    // ::bind returns a new TcpListener instance
-    // connecting to a port to listen to is called "binding to a port"
 
-    // .incoming returns a series of *connection ATTEMPTS* - which 
-    //  aren't necessarily connections
     for stream in listener.incoming().take(2) {
         let stream = stream.unwrap();
 
